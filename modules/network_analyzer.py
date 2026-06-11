@@ -196,7 +196,7 @@ def format_bytes(byte_count):
         return f"{byte_count / (1024**3):.2f} GB/s"
 
 
-def detect_ddos_pattern(pkts_recv_ps, bytes_recv_ps):
+def detect_ddos_pattern(pkts_recv_ps, bytes_recv_ps, packet_threshold=1000, byte_threshold_mb=10):
     """
     Basic DDoS detection using traffic thresholds.
 
@@ -207,11 +207,11 @@ def detect_ddos_pattern(pkts_recv_ps, bytes_recv_ps):
     Returns (is_suspicious, severity, reason)
     """
     # Thresholds
-    HIGH_PACKET_RATE   = 1000   # packets per second
-    HIGH_BYTE_RATE     = 10 * 1024 * 1024  # 10 MB/s
+    HIGH_PACKET_RATE   = packet_threshold   # packets per second
+    HIGH_BYTE_RATE     = byte_threshold_mb * 1024 * 1024  # Convert MB/s to Bytes/s
 
-    CRITICAL_PACKET_RATE = 5000
-    CRITICAL_BYTE_RATE   = 50 * 1024 * 1024  # 50 MB/s
+    CRITICAL_PACKET_RATE = packet_threshold * 5
+    CRITICAL_BYTE_RATE   = byte_threshold_mb * 5 * 1024 * 1024
 
     if pkts_recv_ps > CRITICAL_PACKET_RATE or bytes_recv_ps > CRITICAL_BYTE_RATE:
         return True, "CRITICAL", f"Extremely high inbound traffic — possible DDoS attack ({format_bytes(bytes_recv_ps)}, {pkts_recv_ps} pkts/s)"
@@ -258,7 +258,7 @@ def detect_port_scan(connections):
     return scanners
 
 
-def analyze_connections():
+def analyze_connections(packet_threshold=1000, byte_threshold_mb=10):
     """
     MAIN ANALYSIS FUNCTION.
 
@@ -365,7 +365,9 @@ def analyze_connections():
     # ---- DDoS pattern detection ----
     ddos_flagged, ddos_severity, ddos_reason = detect_ddos_pattern(
         traffic["pkts_recv_ps"],
-        traffic["bytes_recv_ps"]
+        traffic["bytes_recv_ps"],
+        packet_threshold=packet_threshold,
+        byte_threshold_mb=byte_threshold_mb
     )
 
     # ---- Overall risk level ----

@@ -232,7 +232,7 @@ def get_process_details(process):
     return details
 
 
-def scan_for_keyloggers(verbose=False):
+def scan_for_keyloggers(verbose=False, progress_callback=None):
     """
     MAIN SCAN FUNCTION.
     Iterates through all running processes and checks each one
@@ -252,6 +252,11 @@ def scan_for_keyloggers(verbose=False):
     total_scanned = 0
     scan_start = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+    try:
+        total_pids = len(psutil.pids())
+    except Exception:
+        total_pids = 300
+
     print("\n[*] Starting process scan... This may take a few seconds.\n")
 
     # psutil.process_iter() yields process objects one by one
@@ -267,6 +272,12 @@ def scan_for_keyloggers(verbose=False):
                 continue  # Skip nameless processes
 
             total_scanned += 1
+
+            if progress_callback:
+                try:
+                    progress_callback(total_scanned, total_pids, proc_name)
+                except Exception:
+                    pass
 
             if verbose:
                 print(f"  Scanning PID {proc_pid:6} | {proc_name[:40]}", end="\r")
